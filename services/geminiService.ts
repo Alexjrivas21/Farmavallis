@@ -1,9 +1,8 @@
-
 import { GoogleGenAI, Type } from '@google/genai';
 import type { DrugInfo } from '../types';
 
 if (!process.env.API_KEY) {
-    throw new Error("API_KEY environment variable not set");
+    throw new Error("La clave de API de Google AI no se encontró en las variables de entorno. Por favor, configure la variable de entorno API_KEY.");
 }
 
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
