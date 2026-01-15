@@ -1,5 +1,5 @@
 import { GoogleGenAI, Type } from '@google/genai';
-import type { DrugInfo } from '../types';
+import type { DrugInfo, IngredientSearchResult } from '../types';
 
 if (!process.env.API_KEY) {
     throw new Error("La clave de API de Google AI no se encontró en las variables de entorno. Por favor, configure la variable de entorno API_KEY.");
@@ -34,6 +34,25 @@ const activeIngredientsSchema = {
     },
     required: ['principiosActivos']
 };
+
+const ingredientSearchSchema = {
+    type: Type.OBJECT,
+    properties: {
+        results: {
+            type: Type.ARRAY,
+            items: {
+                type: Type.OBJECT,
+                properties: {
+                    ingredient: { type: Type.STRING, description: "El nombre del principio activo encontrado." },
+                    category: { type: Type.STRING, description: "La categoría farmacológica a la que pertenece el principio activo." }
+                },
+                required: ['ingredient', 'category']
+            }
+        }
+    },
+    required: ['results']
+};
+
 
 export const getDrugInfo = async (drugName: string): Promise<DrugInfo> => {
     const prompt = `Proporcione información farmacológica detallada para el principio activo "${drugName}" en español. Estructure la respuesta como un objeto JSON que coincida con el esquema proporcionado. Asegúrese de que todos los campos estén poblados con información precisa y concisa, adecuada para una audiencia general. Incluya una advertencia clara sobre los peligros de la automedicación.`;
@@ -89,3 +108,29 @@ export const getActiveIngredients = async (categoryName: string): Promise<string
         throw new Error(`Failed to fetch active ingredients for ${categoryName}.`);
     }
 };
+
+export const searchActiveIngredients = async (query: string): Promise<IngredientSearchResult[]> => {
+    const prompt = `Busca principios activos que coincidan con la consulta "${query}". Para cada coincidencia (máximo 5), devuelve el principio activo y su categoría farmacológica más probable. Usa los nombres de categoría exactos de esta lista: [${drugCategories.map(c => `'${c.name}'`).join(', ')}]. Devuelve el resultado como un objeto JSON que coincida con el esquema proporcionado. Si no encuentras nada, devuelve un array vacío.`;
+
+    try {
+        const response = await ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+            config: {
+                responseMimeType: 'application/json',
+                responseSchema: ingredientSearchSchema,
+            },
+        });
+
+        const jsonString = response.text.trim();
+        const parsedJson = JSON.parse(jsonString);
+        return parsedJson.results || [];
+    } catch (error) {
+        console.error(`Error searching active ingredients for "${query}":`, error);
+        // Devuelve un array vacío en caso de error para no bloquear la UI
+        return [];
+    }
+};
+
+// Se importa aquí para evitar dependencia circular si se moviera a otro fichero
+import { drugCategories } from '../constants/drugCategories';

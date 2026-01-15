@@ -3,15 +3,28 @@ import React from 'react';
 import { TiktokIcon } from './icons/TiktokIcon';
 import { InstagramIcon } from './icons/InstagramIcon';
 import { WhatsappIcon } from './icons/WhatsappIcon';
+import { LocationIcon } from './icons/LocationIcon';
 
 const Footer: React.FC = () => {
+    const googleMapsUrl = "https://google.com/maps/place/FARMAVALLIS+C.A/data=!4m2!3m1!1s0x0:0xf2083e58d241fd70?sa=X&ved=1t:2428&ictx=111";
+
     return (
         <footer className="bg-gray-900 text-slate-300 py-6 mt-auto">
             <div className="container mx-auto px-4 flex flex-wrap justify-center sm:justify-between items-center gap-4">
                 {/* Main Info */}
                 <div className="text-center sm:text-left">
                     <div className="mb-2">
-                        <p className="font-bold text-lg text-farmavallis-blue">FARMAVALLIS</p>
+                        <p className="font-bold text-lg text-farmavallis-blue">
+                             <a 
+                                href={googleMapsUrl} 
+                                target="_blank" 
+                                rel="noopener noreferrer" 
+                                className="inline-flex items-center gap-2 hover:text-farmavallis-yellow hover:underline transition-colors duration-200"
+                            >
+                                FARMAVALLIS
+                                <LocationIcon className="h-5 w-5" />
+                            </a>
+                        </p>
                         <p className="text-sm">Valle Guanape, Anzoátegui, Venezuela</p>
                     </div>
                     <div className="flex justify-center sm:justify-start items-center space-x-6">

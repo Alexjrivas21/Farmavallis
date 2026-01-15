@@ -11,6 +11,7 @@ interface CategoryViewProps {
     drugInfo: DrugInfo | null;
     isLoading: boolean;
     error: string | null;
+    searchQuery: string;
     onSelectDrug: (drugName: string) => void;
     onBackToCategories: () => void;
     onBackToIngredients: () => void;

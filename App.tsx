@@ -1,13 +1,14 @@
 
-import React, { useState, useCallback, useMemo } from 'react';
-import type { DrugCategory, DrugInfo } from './types';
+import React, { useState, useCallback, useMemo, useEffect } from 'react';
+import type { DrugCategory, DrugInfo, SearchResultItem, IngredientSearchResult } from './types';
 import { drugCategories } from './constants/drugCategories';
-import { getDrugInfo, getActiveIngredients } from './services/geminiService';
+import { getDrugInfo, getActiveIngredients, searchActiveIngredients } from './services/geminiService';
 import Header from './components/Header';
 import Footer from './components/Footer';
 import CategoryGrid from './components/CategoryGrid';
 import CategoryView from './components/CategoryView';
 import SearchBar from './components/SearchBar';
+import SearchResults from './components/SearchResults';
 
 const App: React.FC = () => {
     const [selectedCategory, setSelectedCategory] = useState<DrugCategory | null>(null);
@@ -17,6 +18,8 @@ const App: React.FC = () => {
     const [isLoading, setIsLoading] = useState<boolean>(false);
     const [error, setError] = useState<string | null>(null);
     const [searchQuery, setSearchQuery] = useState('');
+    const [searchResults, setSearchResults] = useState<SearchResultItem[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
 
     const handleBackToCategories = useCallback(() => {
         setSelectedCategory(null);
@@ -24,17 +27,52 @@ const App: React.FC = () => {
         setDrugInfo(null);
         setActiveIngredients([]);
         setError(null);
+        setSearchQuery('');
     }, []);
+    
+    useEffect(() => {
+        const handler = setTimeout(async () => {
+            if (searchQuery.trim().length > 1) {
+                setIsSearching(true);
+                setError(null);
+
+                // Búsqueda local de categorías
+                const categoryResults: SearchResultItem[] = drugCategories
+                    .filter(category =>
+                        category.name.toLowerCase().includes(searchQuery.toLowerCase())
+                    )
+                    .map(cat => ({ type: 'category', data: cat }));
+
+                // Búsqueda de principios activos con Gemini
+                try {
+                    const ingredientResultsData = await searchActiveIngredients(searchQuery);
+                    const ingredientResults: SearchResultItem[] = ingredientResultsData.map(ing => ({ type: 'ingredient', data: ing }));
+                    
+                    setSearchResults([...categoryResults, ...ingredientResults]);
+                } catch (err) {
+                    console.error("Search error:", err);
+                    setError("Error al realizar la búsqueda.");
+                    setSearchResults(categoryResults); // Mostrar al menos los resultados de categoría
+                } finally {
+                    setIsSearching(false);
+                }
+            } else {
+                setSearchResults([]);
+            }
+        }, 500); // Debounce de 500ms
+
+        return () => {
+            clearTimeout(handler);
+        };
+    }, [searchQuery]);
 
     const handleSearchChange = (query: string) => {
         setSearchQuery(query);
-        if (query && selectedCategory) {
-            handleBackToCategories();
-        }
     };
 
     const handleSelectCategory = useCallback(async (category: DrugCategory) => {
         setSearchQuery('');
+        setSearchResults([]);
         setSelectedCategory(category);
         setSelectedDrug(null);
         setDrugInfo(null);
@@ -68,18 +106,70 @@ const App: React.FC = () => {
         }
     }, []);
 
+    const handleSelectIngredientFromSearch = useCallback(async (searchResult: IngredientSearchResult) => {
+        const category = drugCategories.find(c => c.name === searchResult.category);
+        if (category) {
+            setSearchQuery('');
+            setSearchResults([]);
+            setSelectedCategory(category);
+            // Pre-selecciona el fármaco y comienza a cargar su información
+            await handleSelectDrug(searchResult.ingredient);
+            // También carga la lista completa de ingredientes de la categoría en segundo plano
+            try {
+                const ingredients = await getActiveIngredients(category.name);
+                setActiveIngredients(ingredients);
+            } catch (err) {
+                console.error("Error fetching active ingredients in background:", err);
+                // No mostrar este error al usuario para no interrumpir el flujo principal
+            }
+        } else {
+            setError(`No se pudo encontrar la categoría "${searchResult.category}".`);
+        }
+    }, [handleSelectDrug]);
+
     const handleBackToIngredients = useCallback(() => {
         setSelectedDrug(null);
         setDrugInfo(null);
         setError(null);
     }, []);
 
-    const filteredCategories = useMemo(() => {
-        if (!searchQuery) return drugCategories;
-        return drugCategories.filter(category =>
-            category.name.toLowerCase().includes(searchQuery.toLowerCase())
+    const renderContent = () => {
+        if (searchQuery) {
+            return (
+                <SearchResults
+                    results={searchResults}
+                    isLoading={isSearching}
+                    query={searchQuery}
+                    onSelectCategory={handleSelectCategory}
+                    onSelectIngredient={handleSelectIngredientFromSearch}
+                />
+            );
+        }
+        if (selectedCategory) {
+            const filteredActiveIngredients = activeIngredients; // Búsqueda dentro de categoría eliminada
+            return (
+                <CategoryView
+                    category={selectedCategory}
+                    activeIngredients={filteredActiveIngredients}
+                    selectedDrug={selectedDrug}
+                    drugInfo={drugInfo}
+                    isLoading={isLoading}
+                    error={error}
+                    searchQuery={''} // Se pasa string vacío
+                    onSelectDrug={handleSelectDrug}
+                    onBackToCategories={handleBackToCategories}
+                    onBackToIngredients={handleBackToIngredients}
+                />
+            );
+        }
+        return (
+            <CategoryGrid
+                categories={drugCategories}
+                onSelectCategory={handleSelectCategory}
+                searchQuery={searchQuery}
+            />
         );
-    }, [searchQuery]);
+    };
 
     return (
         <div className="flex flex-col min-h-screen">
@@ -88,28 +178,9 @@ const App: React.FC = () => {
                 <SearchBar
                     query={searchQuery}
                     onQueryChange={handleSearchChange}
-                    placeholder="Buscar categorías..."
+                    placeholder="Buscar categoría o principio activo..."
                 />
-
-                {selectedCategory ? (
-                    <CategoryView
-                        category={selectedCategory}
-                        activeIngredients={activeIngredients}
-                        selectedDrug={selectedDrug}
-                        drugInfo={drugInfo}
-                        isLoading={isLoading}
-                        error={error}
-                        onSelectDrug={handleSelectDrug}
-                        onBackToCategories={handleBackToCategories}
-                        onBackToIngredients={handleBackToIngredients}
-                    />
-                ) : (
-                    <CategoryGrid
-                        categories={filteredCategories}
-                        onSelectCategory={handleSelectCategory}
-                        searchQuery={searchQuery}
-                    />
-                )}
+                {renderContent()}
             </main>
             <Footer />
         </div>

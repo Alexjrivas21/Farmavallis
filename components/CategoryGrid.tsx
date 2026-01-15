@@ -58,25 +58,15 @@ const CategoryCard: React.FC<{ category: DrugCategory; onSelect: () => void }> =
     );
 };
 
-const CategoryGrid: React.FC<CategoryGridProps> = ({ categories, onSelectCategory, searchQuery }) => {
+const CategoryGrid: React.FC<CategoryGridProps> = ({ categories, onSelectCategory }) => {
     return (
         <div>
-            {!searchQuery && (
-                <h2 className="text-2xl font-bold text-center mb-8 text-farmavallis-blue">Selecciona un Grupo de Medicamentos</h2>
-            )}
-            {categories.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
-                    {categories.map((category) => (
-                        <CategoryCard key={category.id} category={category} onSelect={() => onSelectCategory(category)} />
-                    ))}
-                </div>
-            ) : (
-                searchQuery && (
-                    <div className="text-center py-10">
-                        <p className="text-slate-400 text-lg">No se encontraron resultados para "{searchQuery}"</p>
-                    </div>
-                )
-            )}
+            <h2 className="text-2xl font-bold text-center mb-8 text-farmavallis-blue">Selecciona un Grupo de Medicamentos</h2>
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 md:gap-6">
+                {categories.map((category) => (
+                    <CategoryCard key={category.id} category={category} onSelect={() => onSelectCategory(category)} />
+                ))}
+            </div>
         </div>
     );
 };
