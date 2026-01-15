@@ -59,7 +59,17 @@ export const getDrugInfo = async (drugName: string): Promise<DrugInfo> => {
 
 
 export const getActiveIngredients = async (categoryName: string): Promise<string[]> => {
-    const prompt = `Enumere entre 5 y 10 principios activos comunes para la categoría de medicamentos "${categoryName}" en español. Devuelva el resultado como un objeto JSON con una única clave "principiosActivos" que sea un array de strings.`;
+    // Lógica personalizada para forzar la categoría del ácido acetilsalicílico según requerimiento del usuario
+    let specialRule = "";
+    const lowerCategory = categoryName.toLowerCase();
+    
+    if (lowerCategory.includes("analgésicos")) {
+        specialRule = " IMPORTANTE: Debes incluir obligatoriamente el 'ácido acetilsalicílico' en esta lista de analgésicos.";
+    } else if (lowerCategory.includes("antiagregante")) {
+        specialRule = " IMPORTANTE: NO incluyas el 'ácido acetilsalicílico' en esta lista, ya que ahora pertenece exclusivamente a la categoría de Analgésicos.";
+    }
+
+    const prompt = `Enumere entre 5 y 10 principios activos comunes para la categoría de medicamentos "${categoryName}" en español.${specialRule} Devuelva el resultado como un objeto JSON con una única clave "principiosActivos" que sea un array de strings.`;
 
     try {
         const response = await ai.models.generateContent({

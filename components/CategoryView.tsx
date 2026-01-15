@@ -110,10 +110,20 @@ const CategoryView: React.FC<CategoryViewProps> = ({
 }) => {
     return (
         <div className="w-full max-w-4xl mx-auto">
-            <div className="mb-8 flex items-center justify-between">
-                 <button onClick={onBackToCategories} className="px-4 py-2 bg-slate-700 text-farmavallis-blue rounded-lg hover:bg-slate-600 hover:text-farmavallis-yellow transition-all duration-200 ease-in-out shadow-md hover:shadow-lg transform hover:-translate-y-px active:translate-y-0 active:shadow-md text-sm">&larr; Volver a Categorías</button>
+            <div className="mb-8 flex flex-col sm:flex-row items-center justify-between gap-4">
+                 <button 
+                    onClick={onBackToCategories} 
+                    className="px-4 py-2 bg-slate-700 text-farmavallis-yellow rounded-lg hover:bg-slate-600 hover:text-white transition-all duration-200 ease-in-out shadow-md hover:shadow-lg transform hover:-translate-y-px active:translate-y-0 active:shadow-md text-sm font-medium"
+                >
+                    &larr; Volver a Categorías
+                </button>
                  {selectedDrug && (
-                     <button onClick={onBackToIngredients} className="px-4 py-2 bg-slate-700 text-farmavallis-blue rounded-lg hover:bg-slate-600 hover:text-farmavallis-yellow transition-all duration-200 ease-in-out shadow-md hover:shadow-lg transform hover:-translate-y-px active:translate-y-0 active:shadow-md text-sm">Volver a Principios Activos</button>
+                     <button 
+                        onClick={onBackToIngredients} 
+                        className="px-4 py-2 bg-slate-700 text-farmavallis-yellow rounded-lg hover:bg-slate-600 hover:text-white transition-all duration-200 ease-in-out shadow-md hover:shadow-lg transform hover:-translate-y-px active:translate-y-0 active:shadow-md text-sm font-medium"
+                    >
+                        Volver a Principios Activos
+                    </button>
                  )}
             </div>
 
